@@ -16,11 +16,40 @@ const socketOptions = {
   timeout: 20000
 };
 
-const Container = styled.div`
-  max-width: 1200px;
-  margin: 2rem auto;
-  padding: 1rem;
+const PageWrapper = styled.div`
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 0;
+`;
+
+const VideoCard = styled.div`
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(25, 118, 210, 0.10);
+  max-width: 700px;
+  width: 100%;
+  min-width: 0;
+  padding: 2.2rem 1.5rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  @media (max-width: 700px) {
+    border-radius: 0;
+    padding: 1.2rem 0.5rem 1rem 0.5rem;
+    max-width: 100vw;
+  }
+`;
+
+const StatusArea = styled.div`
+  font-size: 1.18rem;
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 2.2rem;
   text-align: center;
+  min-height: 2.2rem;
 `;
 
 const VideoGrid = styled.div`
@@ -179,6 +208,7 @@ function VideoChat({ setOnlineUsers }) {
     }
   }, [remoteStream, isVideoElementsMounted]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const socket = io(SOCKET_URL, socketOptions);
     socketRef.current = socket;
@@ -411,64 +441,84 @@ function VideoChat({ setOnlineUsers }) {
   };
 
   return (
-    <Container>
-      {error && <Status style={{ color: 'red' }}>{error}</Status>}
-      {!isConnected ? (
-        <>
-          <Button onClick={handleStart} disabled={connectionStatus !== 'idle' || !socketRef.current?.connected}>
+    <PageWrapper>
+      <VideoCard>
+        <StatusArea>
+          {error ? (
+            <span style={{ color: 'red' }}>{error}</span>
+          ) : !isConnected ? (
+            connectionStatus === 'finding' ? 'Finding a random online user...' :
+            connectionStatus === 'establishing' ? 'Establishing connection...' :
+            'Ready to connect!'
+          ) : (
+            'Connected with Stranger'
+          )}
+        </StatusArea>
+        {!isConnected ? (
+          <button
+            onClick={handleStart}
+            disabled={connectionStatus !== 'idle' || !socketRef.current?.connected}
+            style={{
+              padding: '0.7rem 1.5rem',
+              border: 'none',
+              borderRadius: '20px',
+              background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+              color: 'white',
+              cursor: connectionStatus !== 'idle' || !socketRef.current?.connected ? 'not-allowed' : 'pointer',
+              fontWeight: 600,
+              fontSize: '1.08rem',
+              boxShadow: '0 2px 8px rgba(25, 118, 210, 0.10)',
+              transition: 'background 0.2s, box-shadow 0.2s',
+              marginTop: '1.5rem',
+              opacity: connectionStatus !== 'idle' || !socketRef.current?.connected ? 0.7 : 1
+            }}
+          >
             {connectionStatus === 'idle' && (socketRef.current?.connected ? 'Start Video Chat' : 'Connecting...')}
             {connectionStatus === 'finding' && 'Finding online users...'}
             {connectionStatus === 'establishing' && 'Establishing connection...'}
-          </Button>
-          {connectionStatus !== 'idle' && <Status>{connectionStatus === 'finding' ? 'Finding a random online user...' : connectionStatus === 'establishing' ? 'Establishing connection...' : ''}</Status>}
-        </>
-      ) : (
-        <>
-          <Status>
-            Connected with Stranger
-            {!isVideoElementsMounted && ' (Initializing video...)'}
-            {isVideoElementsMounted && !isLocalVideoReady && ' (Waiting for local video...)'}
-            {isVideoElementsMounted && !isRemoteVideoReady && ' (Waiting for remote video...)'}
-          </Status>
-          <VideoGrid>
-            <VideoContainer>
-              <Video 
-                ref={localVideoRef} 
-                autoPlay 
-                muted 
-                playsInline 
-                style={{ transform: 'scaleX(-1)' }} // Mirror local video
+          </button>
+        ) : (
+          <>
+            <VideoGrid>
+              <VideoContainer>
+                <Video 
+                  ref={localVideoRef} 
+                  autoPlay 
+                  muted 
+                  playsInline 
+                  style={{ transform: 'scaleX(-1)' }} // Mirror local video
+                />
+                {!isLocalVideoReady && <Status>Loading local video...</Status>}
+              </VideoContainer>
+              <VideoContainer>
+                <Video 
+                  ref={remoteVideoRef} 
+                  autoPlay 
+                  playsInline 
+                />
+                {!isRemoteVideoReady && <Status>Loading remote video...</Status>}
+              </VideoContainer>
+            </VideoGrid>
+            <Controls>
+              <SpeakingButtonVideo
+                isMuted={isMuted}
+                onClick={toggleMute}
+                size={24}
               />
-              {!isLocalVideoReady && <Status>Loading local video...</Status>}
-            </VideoContainer>
-            <VideoContainer>
-              <Video 
-                ref={remoteVideoRef} 
-                autoPlay 
-                playsInline 
+              <CameraButton
+                isOff={isVideoOff}
+                onClick={toggleVideo}
+                size={24}
               />
-              {!isRemoteVideoReady && <Status>Loading remote video...</Status>}
-            </VideoContainer>
-          </VideoGrid>
-          <Controls>
-            <SpeakingButtonVideo
-              isMuted={isMuted}
-              onClick={toggleMute}
-              size={24}
-            />
-            <CameraButton
-              isOff={isVideoOff}
-              onClick={toggleVideo}
-              size={24}
-            />
-            <StopButton
-              onClick={handleStop}
-              size={24}
-            />
-          </Controls>
-        </>
-      )}
-    </Container>
+              <StopButton
+                onClick={handleStop}
+                size={24}
+              />
+            </Controls>
+          </>
+        )}
+      </VideoCard>
+    </PageWrapper>
   );
 }
 

@@ -15,43 +15,47 @@ const socketOptions = {
   timeout: 20000
 };
 
-const Container = styled.div`
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 1rem;
-  text-align: center;
+const PageWrapper = styled.div`
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 0;
 `;
 
-const Button = styled.button`
-  padding: 0.5rem 1.5rem;
-  border: none;
+const VoiceCard = styled.div`
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
   border-radius: 20px;
-  background: #1a73e8;
-  color: white;
-  cursor: pointer;
-  font-weight: 500;
-  margin: 0.5rem;
-
-  &:hover {
-    background: #1557b0;
-  }
-
-  &:disabled {
-    background: #ccc;
-    cursor: not-allowed;
+  box-shadow: 0 4px 24px rgba(25, 118, 210, 0.10);
+  max-width: 350px;
+  width: 100%;
+  min-width: 0;
+  padding: 2.2rem 1.5rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  @media (max-width: 500px) {
+    border-radius: 0;
+    padding: 1.2rem 0.5rem 1rem 0.5rem;
+    max-width: 100vw;
   }
 `;
 
-const Status = styled.div`
-  margin: 1rem 0;
-  color: #666;
+const StatusArea = styled.div`
+  font-size: 1.18rem;
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 2.2rem;
+  text-align: center;
+  min-height: 2.2rem;
 `;
 
 const AudioControls = styled.div`
   display: flex;
   justify-content: center;
-  gap: 1rem;
-  margin: 1rem 0;
+  gap: 1.5rem;
+  margin: 1rem 0 0 0;
 `;
 
 function VoiceChat({ setOnlineUsers }) {
@@ -67,6 +71,7 @@ function VoiceChat({ setOnlineUsers }) {
   const initiatorRef = useRef(false);
   const partnerIdRef = useRef(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const socket = io(SOCKET_URL, socketOptions);
     socketRef.current = socket;
@@ -255,27 +260,52 @@ function VoiceChat({ setOnlineUsers }) {
   };
 
   return (
-    <Container>
-      {error && <Status style={{ color: 'red' }}>{error}</Status>}
-      {!isConnected ? (
-        <>
-          <Button onClick={handleStart} disabled={connectionStatus !== 'idle' || !socketRef.current?.connected}>
-            {connectionStatus === 'idle' && (socketRef.current?.connected ? 'Start Voice Chat' : 'Connecting...')}
-            {connectionStatus === 'finding' && 'Finding online users...'}
-            {connectionStatus === 'establishing' && 'Establishing connection...'}
-          </Button>
-          {connectionStatus !== 'idle' && <Status>{connectionStatus === 'finding' ? 'Finding a random online user...' : connectionStatus === 'establishing' ? 'Establishing connection...' : ''}</Status>}
-        </>
-      ) : (
-        <>
-          <Status>Connected with Stranger</Status>
+    <PageWrapper>
+      <VoiceCard>
+        <StatusArea>
+          {error ? (
+            <span style={{ color: 'red' }}>{error}</span>
+          ) : !isConnected ? (
+            connectionStatus === 'finding' ? 'Finding a random online user...' :
+            connectionStatus === 'establishing' ? 'Establishing connection...' :
+            'Ready to connect!'
+          ) : (
+            'Connected with Stranger'
+          )}
+        </StatusArea>
+        {!isConnected ? (
+          <>
+            <button
+              onClick={handleStart}
+              disabled={connectionStatus !== 'idle' || !socketRef.current?.connected}
+              style={{
+                padding: '0.7rem 1.5rem',
+                border: 'none',
+                borderRadius: '20px',
+                background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+                color: 'white',
+                cursor: connectionStatus !== 'idle' || !socketRef.current?.connected ? 'not-allowed' : 'pointer',
+                fontWeight: 600,
+                fontSize: '1.08rem',
+                boxShadow: '0 2px 8px rgba(25, 118, 210, 0.10)',
+                transition: 'background 0.2s, box-shadow 0.2s',
+                marginTop: '1.5rem',
+                opacity: connectionStatus !== 'idle' || !socketRef.current?.connected ? 0.7 : 1
+              }}
+            >
+              {connectionStatus === 'idle' && (socketRef.current?.connected ? 'Start Voice Chat' : 'Connecting...')}
+              {connectionStatus === 'finding' && 'Finding online users...'}
+              {connectionStatus === 'establishing' && 'Establishing connection...'}
+            </button>
+          </>
+        ) : (
           <AudioControls>
-            <SpeakingButtonVoice isMuted={isMuted} toggleMute={toggleMute} size={24} />
-            <StopButton onClick={handleStop} size={24} />
+            <SpeakingButtonVoice isMuted={isMuted} toggleMute={toggleMute} size={32} />
+            <StopButton onClick={handleStop} size={32} />
           </AudioControls>
-        </>
-      )}
-    </Container>
+        )}
+      </VoiceCard>
+    </PageWrapper>
   );
 }
 

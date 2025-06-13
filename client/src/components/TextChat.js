@@ -19,32 +19,54 @@ const socketOptions = {
 };
 
 const ChatContainer = styled.div`
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  height: 500px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(25, 118, 210, 0.10);
+  min-height: 400px;
+  max-width: 420px;
+  width: 100%;
+  min-width: 0;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+
+  @media (max-width: 500px) {
+    max-width: 100vw;
+    border-radius: 0;
+    margin: 0;
+  }
 `;
 
 const MessagesContainer = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 1.2rem 1rem 1rem 1rem;
+  background: #f7fbff;
+  box-sizing: border-box;
+
+  @media (max-width: 500px) {
+    padding: 1rem 0.5rem 0.7rem 0.5rem;
+  }
 `;
 
 const Message = styled.div`
   margin: 0.5rem 0;
-  padding: 0.5rem 1rem;
+  padding: 0.7rem 1.2rem;
   border-radius: 20px;
-  max-width: 70%;
+  max-width: 80%;
+  font-size: 1.08rem;
   ${props => props.isMine ? `
-    background: #1a73e8;
+    background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
     color: white;
     margin-left: auto;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.10);
   ` : `
-    background: #f0f2f5;
+    background: #e3f2fd;
     color: #333;
+    margin-right: auto;
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.06);
   `}
 `;
 
@@ -53,36 +75,48 @@ const InputContainer = styled.div`
   padding: 1rem;
   border-top: 1px solid #eee;
   gap: 0.5rem;
+  background: #f7fbff;
+  box-sizing: border-box;
+
+  @media (max-width: 500px) {
+    padding: 0.7rem 0.5rem;
+  }
 `;
 
 const Input = styled.input`
   flex: 1;
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid #bbdefb;
   border-radius: 20px;
   outline: none;
-  
+  font-size: 1.08rem;
+  background: #fff;
+  transition: border 0.2s;
   &:focus {
-    border-color: #1a73e8;
+    border-color: #1976d2;
   }
 `;
 
 const Button = styled.button`
-  padding: 0.5rem 1.5rem;
+  padding: 0.7rem 1.5rem;
   border: none;
   border-radius: 20px;
-  background: #1a73e8;
+  background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
   color: white;
   cursor: pointer;
-  font-weight: 500;
-  
+  font-weight: 600;
+  font-size: 1.08rem;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.10);
+  transition: background 0.2s, box-shadow 0.2s;
   &:hover {
-    background: #1557b0;
+    background: linear-gradient(90deg, #1565c0 0%, #1976d2 100%);
+    box-shadow: 0 4px 16px rgba(25, 118, 210, 0.13);
   }
-  
   &:disabled {
     background: #ccc;
+    color: #888;
     cursor: not-allowed;
+    box-shadow: none;
   }
 `;
 
@@ -98,13 +132,48 @@ const StopButtonRow = styled.div`
   margin: 1rem 0 0 0;
 `;
 
+const PageWrapper = styled.div`
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 0;
+`;
+
+const ChatCard = styled.div`
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(25, 118, 210, 0.10);
+  max-width: 420px;
+  width: 100%;
+  min-width: 0;
+  padding: 2.2rem 1.5rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  @media (max-width: 500px) {
+    border-radius: 0;
+    padding: 1.2rem 0.5rem 1rem 0.5rem;
+    max-width: 100vw;
+  }
+`;
+
+const StatusArea = styled.div`
+  font-size: 1.18rem;
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 2.2rem;
+  text-align: center;
+  min-height: 2.2rem;
+`;
+
 function TextChat({ setOnlineUsers }) {
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [partnerId, setPartnerId] = useState(null);
-  const [error, setError] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('idle'); // idle, finding, establishing, connected
   const messagesEndRef = useRef(null);
 
@@ -114,12 +183,10 @@ function TextChat({ setOnlineUsers }) {
 
     newSocket.on('connect', () => {
       console.log('Socket connected');
-      setError(null);
     });
 
     newSocket.on('connect_error', (err) => {
       console.error('Connection error:', err);
-      setError('Unable to connect to server. Retrying...');
       setConnectionStatus('idle');
     });
 
@@ -198,45 +265,69 @@ function TextChat({ setOnlineUsers }) {
   };
 
   return (
-    <Container>
-      {!isConnected ? (
-        <>
-          <Button onClick={handleStart} disabled={connectionStatus !== 'idle'}>
+    <PageWrapper>
+      <ChatCard>
+        <StatusArea>
+          {!isConnected ? (
+            connectionStatus === 'finding' ? 'Finding a random online user...' :
+            connectionStatus === 'establishing' ? 'Establishing connection...' :
+            'Ready to connect!'
+          ) : (
+            'Connected with Stranger'
+          )}
+        </StatusArea>
+        {!isConnected ? (
+          <button
+            onClick={handleStart}
+            disabled={connectionStatus !== 'idle'}
+            style={{
+              padding: '0.7rem 1.5rem',
+              border: 'none',
+              borderRadius: '20px',
+              background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+              color: 'white',
+              cursor: connectionStatus !== 'idle' ? 'not-allowed' : 'pointer',
+              fontWeight: 600,
+              fontSize: '1.08rem',
+              boxShadow: '0 2px 8px rgba(25, 118, 210, 0.10)',
+              transition: 'background 0.2s, box-shadow 0.2s',
+              marginTop: '1.5rem',
+              opacity: connectionStatus !== 'idle' ? 0.7 : 1
+            }}
+          >
             {connectionStatus === 'idle' && 'Start Chatting'}
             {connectionStatus === 'finding' && 'Finding online users...'}
             {connectionStatus === 'establishing' && 'Establishing connection...'}
-          </Button>
-          {connectionStatus !== 'idle' && <Status>{connectionStatus === 'finding' ? 'Finding a random online user...' : connectionStatus === 'establishing' ? 'Establishing connection...' : ''}</Status>}
-        </>
-      ) : (
-        <>
-          <Status>Connected with Stranger</Status>
-          <ChatContainer>
-            <MessagesContainer>
-              {messages.map((msg, i) => (
-                <Message key={i} isMine={msg.isMine}>
-                  {msg.text}
-                </Message>
-              ))}
-              <div ref={messagesEndRef} />
-            </MessagesContainer>
-            <form onSubmit={handleSend}>
-              <InputContainer>
-                <Input
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Type a message..."
-                />
-                <Button type="submit">Send</Button>
-              </InputContainer>
-            </form>
-          </ChatContainer>
-          <StopButtonRow>
-            <Button type="button" onClick={handleStop}>Stop</Button>
-          </StopButtonRow>
-        </>
-      )}
-    </Container>
+          </button>
+        ) : (
+          <>
+            <ChatContainer>
+              <MessagesContainer>
+                {messages.map((msg, i) => (
+                  <Message key={i} isMine={msg.isMine}>
+                    {msg.text}
+                  </Message>
+                ))}
+                <div ref={messagesEndRef} />
+              </MessagesContainer>
+              <form onSubmit={handleSend}>
+                <InputContainer>
+                  <Input
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Type a message..."
+                  />
+                  <Button type="submit">Send</Button>
+                </InputContainer>
+              </form>
+            </ChatContainer>
+            <StopButtonRow>
+              <Button type="button" onClick={handleStop}>Stop</Button>
+            </StopButtonRow>
+          </>
+        )}
+      </ChatCard>
+    </PageWrapper>
   );
 }
 
