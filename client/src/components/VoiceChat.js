@@ -59,6 +59,7 @@ function VoiceChat({ setOnlineUsers }) {
   const [isMuted, setIsMuted] = useState(false);
   const [stream, setStream] = useState(null);
   const [error, setError] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('idle');
   const socketRef = useRef(null);
   const peerRef = useRef(null);
   const audioRef = useRef(null);
@@ -78,6 +79,7 @@ function VoiceChat({ setOnlineUsers }) {
     socket.on('connect_error', (err) => {
       console.error('Connection error:', err);
       setError('Unable to connect to server. Retrying...');
+      setConnectionStatus('idle');
     });
 
     socket.on('userCount', (count) => {
@@ -88,6 +90,7 @@ function VoiceChat({ setOnlineUsers }) {
     socket.on('match', ({ partnerId, initiator }) => {
       console.log('Matched with partner:', partnerId, 'Initiator:', initiator);
       initiatorRef.current = initiator;
+      setConnectionStatus('establishing');
       setTimeout(() => {
         initializePeer(initiator, partnerId);
       }, 1000);
@@ -170,6 +173,7 @@ function VoiceChat({ setOnlineUsers }) {
         console.log('Peer connected');
         setIsConnected(true);
         setError(null);
+        setConnectionStatus('connected');
         playMatchSound();
         while (pendingSignalsRef.current.length > 0) {
           const s = pendingSignalsRef.current.shift();
@@ -194,6 +198,7 @@ function VoiceChat({ setOnlineUsers }) {
     } catch (err) {
       console.error('Media access error:', err);
       setError('Mic access denied or unavailable.');
+      setConnectionStatus('idle');
     }
   };
 
@@ -227,10 +232,12 @@ function VoiceChat({ setOnlineUsers }) {
     initiatorRef.current = false;
     setIsConnected(false);
     setIsMuted(false);
+    setConnectionStatus('idle');
   };
 
   const handleStart = () => {
     if (socketRef.current?.connected) {
+      setConnectionStatus('finding');
       socketRef.current.emit('joinQueue', 'voice');
     }
   };
@@ -251,9 +258,14 @@ function VoiceChat({ setOnlineUsers }) {
     <Container>
       {error && <Status style={{ color: 'red' }}>{error}</Status>}
       {!isConnected ? (
-        <Button onClick={handleStart} disabled={!socketRef.current?.connected}>
-          {socketRef.current?.connected ? 'Start Voice Chat' : 'Connecting...'}
-        </Button>
+        <>
+          <Button onClick={handleStart} disabled={connectionStatus !== 'idle' || !socketRef.current?.connected}>
+            {connectionStatus === 'idle' && (socketRef.current?.connected ? 'Start Voice Chat' : 'Connecting...')}
+            {connectionStatus === 'finding' && 'Finding online users...'}
+            {connectionStatus === 'establishing' && 'Establishing connection...'}
+          </Button>
+          {connectionStatus !== 'idle' && <Status>{connectionStatus === 'finding' ? 'Finding a random online user...' : connectionStatus === 'establishing' ? 'Establishing connection...' : ''}</Status>}
+        </>
       ) : (
         <>
           <Status>Connected with Stranger</Status>
