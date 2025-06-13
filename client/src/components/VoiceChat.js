@@ -88,7 +88,6 @@ function VoiceChat({ setOnlineUsers }) {
     socket.on('match', ({ partnerId, initiator }) => {
       console.log('Matched with partner:', partnerId, 'Initiator:', initiator);
       initiatorRef.current = initiator;
-      playMatchSound();
       setTimeout(() => {
         initializePeer(initiator, partnerId);
       }, 1000);
@@ -132,15 +131,6 @@ function VoiceChat({ setOnlineUsers }) {
     };
   }, [setOnlineUsers]);
 
-  const playMatchSound = () => {
-    try {
-      const audio = new Audio('/ting.mp3');
-      audio.play();
-    } catch (err) {
-      console.warn('Failed to play match sound');
-    }
-  };
-
   const initializePeer = async (initiator, partnerId) => {
     console.log('Initializing peer. Initiator:', initiator);
     try {
@@ -180,7 +170,7 @@ function VoiceChat({ setOnlineUsers }) {
         console.log('Peer connected');
         setIsConnected(true);
         setError(null);
-
+        playMatchSound();
         while (pendingSignalsRef.current.length > 0) {
           const s = pendingSignalsRef.current.shift();
           if ((initiator && s.type === 'answer') || (!initiator && s.type === 'offer')) {
@@ -204,6 +194,15 @@ function VoiceChat({ setOnlineUsers }) {
     } catch (err) {
       console.error('Media access error:', err);
       setError('Mic access denied or unavailable.');
+    }
+  };
+
+  const playMatchSound = () => {
+    try {
+      const audio = new Audio('/ting.mp3');
+      audio.play();
+    } catch (err) {
+      console.warn('Failed to play match sound');
     }
   };
 
