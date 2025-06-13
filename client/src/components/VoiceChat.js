@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import io from 'socket.io-client';
 import SimplePeer from 'simple-peer';
-import SpeakingButton from './common-components/SpeakingButton';
+import SpeakingButtonVoice from './common-components/SpeakingButtonVoice';
+import StopButton from './common-components/StopButton';
 
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL;
 
@@ -247,15 +248,6 @@ function VoiceChat({ setOnlineUsers }) {
     }
   };
 
-
-  // Code for speaking/mute/unmute component
-
-  
-
-  // Code ends for speaking/mute/unmute component
-
-
-
   return (
     <Container>
       {error && <Status style={{ color: 'red' }}>{error}</Status>}
@@ -267,9 +259,8 @@ function VoiceChat({ setOnlineUsers }) {
         <>
           <Status>Connected with Stranger</Status>
           <AudioControls>
-          <SpeakingButton stream={stream} isMuted={isMuted} toggleMute={toggleMute} />
-
-            <Button onClick={handleStop}>Stop</Button>
+            <SpeakingButtonVoice isMuted={isMuted} toggleMute={toggleMute} size={24} />
+            <StopButton onClick={handleStop} size={24} />
           </AudioControls>
         </>
       )}
