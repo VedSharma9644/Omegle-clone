@@ -92,6 +92,12 @@ const Status = styled.div`
   color: #666;
 `;
 
+const StopButtonRow = styled.div`
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0 0 0;
+`;
+
 function TextChat({ setOnlineUsers }) {
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -99,6 +105,7 @@ function TextChat({ setOnlineUsers }) {
   const [isConnected, setIsConnected] = useState(false);
   const [partnerId, setPartnerId] = useState(null);
   const [error, setError] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('idle'); // idle, finding, establishing, connected
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -113,6 +120,7 @@ function TextChat({ setOnlineUsers }) {
     newSocket.on('connect_error', (err) => {
       console.error('Connection error:', err);
       setError('Unable to connect to server. Retrying...');
+      setConnectionStatus('idle');
     });
 
     newSocket.on('userCount', (count) => {
@@ -122,8 +130,12 @@ function TextChat({ setOnlineUsers }) {
 
     newSocket.on('match', ({ partnerId }) => {
       setPartnerId(partnerId);
-      setIsConnected(true);
-      playMatchSound();
+      setConnectionStatus('establishing');
+      setTimeout(() => {
+        setIsConnected(true);
+        setConnectionStatus('connected');
+        playMatchSound();
+      }, 1000);
     });
 
     newSocket.on('message', ({ message }) => {
@@ -134,6 +146,7 @@ function TextChat({ setOnlineUsers }) {
       setIsConnected(false);
       setPartnerId(null);
       setMessages([]);
+      setConnectionStatus('idle');
     });
 
     return () => {
@@ -159,6 +172,7 @@ function TextChat({ setOnlineUsers }) {
   };
 
   const handleStart = () => {
+    setConnectionStatus('finding');
     socket.emit('joinQueue', 'text');
   };
 
@@ -166,6 +180,7 @@ function TextChat({ setOnlineUsers }) {
     setIsConnected(false);
     setPartnerId(null);
     setMessages([]);
+    setConnectionStatus('idle');
   };
 
   const handleSend = (e) => {
@@ -180,7 +195,14 @@ function TextChat({ setOnlineUsers }) {
   return (
     <Container>
       {!isConnected ? (
-        <Button onClick={handleStart}>Start Chatting</Button>
+        <>
+          <Button onClick={handleStart} disabled={connectionStatus !== 'idle'}>
+            {connectionStatus === 'idle' && 'Start Chatting'}
+            {connectionStatus === 'finding' && 'Finding online users...'}
+            {connectionStatus === 'establishing' && 'Establishing connection...'}
+          </Button>
+          {connectionStatus !== 'idle' && <Status>{connectionStatus === 'finding' ? 'Finding a random online user...' : connectionStatus === 'establishing' ? 'Establishing connection...' : ''}</Status>}
+        </>
       ) : (
         <>
           <Status>Connected with Stranger</Status>
@@ -201,10 +223,12 @@ function TextChat({ setOnlineUsers }) {
                   placeholder="Type a message..."
                 />
                 <Button type="submit">Send</Button>
-                <Button type="button" onClick={handleStop}>Stop</Button>
               </InputContainer>
             </form>
           </ChatContainer>
+          <StopButtonRow>
+            <Button type="button" onClick={handleStop}>Stop</Button>
+          </StopButtonRow>
         </>
       )}
     </Container>

@@ -88,6 +88,7 @@ function VideoChat({ setOnlineUsers }) {
   const [isLocalVideoReady, setIsLocalVideoReady] = useState(false);
   const [isRemoteVideoReady, setIsRemoteVideoReady] = useState(false);
   const [isVideoElementsMounted, setIsVideoElementsMounted] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('idle'); // idle, finding, establishing, connected
   
   const socketRef = useRef(null);
   const peerRef = useRef(null);
@@ -190,6 +191,7 @@ function VideoChat({ setOnlineUsers }) {
     socket.on('connect_error', (err) => {
       console.error('Connection error:', err);
       setError('Unable to connect to server. Retrying...');
+      setConnectionStatus('idle');
     });
 
     socket.on('userCount', (count) => {
@@ -201,7 +203,7 @@ function VideoChat({ setOnlineUsers }) {
       console.log('Matched with partner:', partnerId, 'Initiator:', initiator);
       partnerIdRef.current = partnerId;
       initiatorRef.current = initiator;
-      playMatchSound();
+      setConnectionStatus('establishing');
       setTimeout(() => {
         initializePeer(initiator, partnerId);
       }, 1000);
@@ -266,6 +268,7 @@ function VideoChat({ setOnlineUsers }) {
     setIsConnected(false);
     setIsMuted(false);
     setIsVideoOff(false);
+    setConnectionStatus('idle');
   };
 
   const playMatchSound = () => {
@@ -348,7 +351,8 @@ function VideoChat({ setOnlineUsers }) {
         console.log('Peer connection established');
         setIsConnected(true);
         setError(null);
-
+        setConnectionStatus('connected');
+        playMatchSound();
         while (pendingSignalsRef.current.length > 0) {
           const s = pendingSignalsRef.current.shift();
           console.log('Processing pending signal:', s.type);
@@ -373,11 +377,13 @@ function VideoChat({ setOnlineUsers }) {
     } catch (err) {
       console.error('Media access error:', err);
       setError('Camera/mic access denied or unavailable: ' + err.message);
+      setConnectionStatus('idle');
     }
   };
 
   const handleStart = () => {
     if (socketRef.current?.connected) {
+      setConnectionStatus('finding');
       socketRef.current.emit('joinQueue', 'video');
     }
   };
@@ -408,9 +414,14 @@ function VideoChat({ setOnlineUsers }) {
     <Container>
       {error && <Status style={{ color: 'red' }}>{error}</Status>}
       {!isConnected ? (
-        <Button onClick={handleStart} disabled={!socketRef.current?.connected}>
-          {socketRef.current?.connected ? 'Start Video Chat' : 'Connecting...'}
-        </Button>
+        <>
+          <Button onClick={handleStart} disabled={connectionStatus !== 'idle' || !socketRef.current?.connected}>
+            {connectionStatus === 'idle' && (socketRef.current?.connected ? 'Start Video Chat' : 'Connecting...')}
+            {connectionStatus === 'finding' && 'Finding online users...'}
+            {connectionStatus === 'establishing' && 'Establishing connection...'}
+          </Button>
+          {connectionStatus !== 'idle' && <Status>{connectionStatus === 'finding' ? 'Finding a random online user...' : connectionStatus === 'establishing' ? 'Establishing connection...' : ''}</Status>}
+        </>
       ) : (
         <>
           <Status>
