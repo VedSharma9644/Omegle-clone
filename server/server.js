@@ -45,6 +45,9 @@ const queues = {
 // Online user count
 let onlineUsers = 0;
 
+// Track active pairs for text chat
+const textPairs = {};
+
 io.on('connection', (socket) => {
   console.log('New connection:', socket.id);
   onlineUsers++;
@@ -73,6 +76,12 @@ io.on('connection', (socket) => {
       const initiator = Math.random() < 0.5 ? user1 : user2;
       const receiver = initiator === user1 ? user2 : user1;
 
+      // Track text chat pairs
+      if (mode === 'text') {
+        textPairs[user1] = user2;
+        textPairs[user2] = user1;
+      }
+
       console.log(`Matching users: ${initiator} and ${receiver}`);
       // Notify both users of match and roles
       io.to(initiator).emit('match', { mode, partnerId: receiver, initiator: true });
@@ -91,6 +100,20 @@ io.on('connection', (socket) => {
     io.to(to).emit('message', { from: socket.id, message });
   });
 
+  // Handle leaving text chat
+  socket.on('leaveChat', () => {
+    console.log('User left text chat:', socket.id);
+    // Remove from text queue
+    queues.text = queues.text.filter(id => id !== socket.id);
+    // Notify text chat partner only
+    const partnerId = textPairs[socket.id];
+    if (partnerId) {
+      io.to(partnerId).emit('partnerDisconnected');
+      delete textPairs[partnerId];
+      delete textPairs[socket.id];
+    }
+  });
+
   // Handle disconnection
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
@@ -102,8 +125,13 @@ io.on('connection', (socket) => {
       queues[mode] = queues[mode].filter(id => id !== socket.id);
     });
 
-    // Notify partner if in a chat
-    socket.broadcast.emit('partnerDisconnected');
+    // Notify text chat partner only
+    const partnerId = textPairs[socket.id];
+    if (partnerId) {
+      io.to(partnerId).emit('partnerDisconnected');
+      delete textPairs[partnerId];
+      delete textPairs[socket.id];
+    }
   });
 });
 

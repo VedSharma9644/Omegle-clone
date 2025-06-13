@@ -143,6 +143,7 @@ function TextChat({ setOnlineUsers }) {
     });
 
     newSocket.on('partnerDisconnected', () => {
+      console.log('TextChat: partnerDisconnected event received, cleaning up connection');
       setIsConnected(false);
       setPartnerId(null);
       setMessages([]);
@@ -177,6 +178,10 @@ function TextChat({ setOnlineUsers }) {
   };
 
   const handleStop = () => {
+    console.log('TextChat: handleStop called, cleaning up connection');
+    if (socket) {
+      socket.emit('leaveChat');
+    }
     setIsConnected(false);
     setPartnerId(null);
     setMessages([]);
