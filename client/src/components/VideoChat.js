@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import io from 'socket.io-client';
 import SimplePeer from 'simple-peer';
+import SpeakingButtonVideo from './common-components/SpeakingButtonVideo';
+import CameraButton from './common-components/CameraButton';
+import StopButton from './common-components/StopButton';
 
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL;
 
@@ -71,6 +74,7 @@ const Controls = styled.div`
   justify-content: center;
   gap: 1rem;
   margin: 1rem 0;
+  align-items: center;
 `;
 
 function VideoChat({ setOnlineUsers }) {
@@ -436,13 +440,20 @@ function VideoChat({ setOnlineUsers }) {
             </VideoContainer>
           </VideoGrid>
           <Controls>
-            <Button onClick={toggleMute}>
-              {isMuted ? 'Unmute' : 'Mute'}
-            </Button>
-            <Button onClick={toggleVideo}>
-              {isVideoOff ? 'Turn On Video' : 'Turn Off Video'}
-            </Button>
-            <Button onClick={handleStop}>Stop</Button>
+            <SpeakingButtonVideo
+              isMuted={isMuted}
+              onClick={toggleMute}
+              size={24}
+            />
+            <CameraButton
+              isOff={isVideoOff}
+              onClick={toggleVideo}
+              size={24}
+            />
+            <StopButton
+              onClick={handleStop}
+              size={24}
+            />
           </Controls>
         </>
       )}
